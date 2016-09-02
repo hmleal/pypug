@@ -26,24 +26,40 @@ class Interpreter:
         raise Exception('Error parsing input')
 
     def get_next_token(self):
-        text = self.text
+        while self.current_char is not None:
+            if self.current_char.isspace():
+                self.skip_whitespace()
+                continue
 
-        if self.pos > len(text) - 1:
-            return Token(EOF, None)
+            if self.current_char.isdigit():
+                token = Token(INTEGER, int(self.current_char))
+                self.advance()
+                return token
 
-        current_char = text[self.pos]
+            if self.current_char == '+':
+                token = Token(PLUS, self.current_char)
+                self.advance()
+                return token
 
-        if current_char.isdigit():
-            token = Token(INTEGER, int(current_char))
-            self.pos += 1
-            return token
+            if self.current_char == '-':
+                token = Token(MINUS, self.current_char)
+                self.advance()
+                return token
 
-        if current_char == '+':
-            token = Token(PLUS, current_char)
-            self.pos += 1
-            return token
+            self.error()
 
-        self.error()
+        return Token(EOF, None)
+
+    def skip_whitespace(self):
+        while self.current_char is not None and self.current_char.isspace():
+            self.advance()
+
+    def advance(self):
+        self.pos += 1
+        if self.pos > len(self.text) - 1:
+            self.current_char = None
+        else:
+            self.current_char = self.text[self.pos]
 
     def eat(self, token_type):
         if self.current_token.type == token_type:
@@ -58,12 +74,18 @@ class Interpreter:
         self.eat(INTEGER)
 
         op = self.current_token
-        self.eat(PLUS)
+        if op.type == PLUS:
+            self.eat(PLUS)
+        else:
+            self.eat(MINUS)
 
         right = self.current_token
         self.eat(INTEGER)
 
-        return left.value + right.value
+        if op.type == PLUS:
+            return left.value + right.value
+        else:
+            return left.value - right.value
 
 
 if __name__ == '__main__':
